@@ -14,8 +14,16 @@ let contract_abi = [{"constant":true,"inputs":[],"name":"getTheIndex","outputs":
 let contract_instance = web3.eth.contract(contract_abi).at(contract_address);
 
 web3.personal.unlockAccount(web3.eth.accounts[0], '1qazxsw2'); // set account password
+var mined = 0;
+var txs = 20;
 
-for (let a=0; a<10; a++) {
+contract_instance.SetEvent({}, {fromBlock:0, toBlock:'latest'}).watch(function(err, event) {
+    console.log('event fired:', JSON.stringify(event.args, null, 2));
+})
+
+console.time('submit');
+console.time('mine');
+for (let a=0; a<txs; a++) {
     let key = randomstring.generate(5);
     let value = randomstring.generate(20);
 
@@ -27,9 +35,14 @@ for (let a=0; a<10; a++) {
         console.log(txHash);
         callWhenMined(txHash, function () {
             console.log(`mined: ${ txHash }`);
+            mined++;
+            if (mined === txs) {
+                console.timeEnd('mine')
+            }
         });
     });
 }
+console.timeEnd('submit');
 
 function callWhenMined(txHash, callback) {
     web3.eth.getTransactionReceipt(txHash, function(error, rcpt) {
